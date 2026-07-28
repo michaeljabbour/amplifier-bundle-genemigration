@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
-"""Hill-climbing eval for the Gene-Migration attractor.
-
-Reads an ORDERED series of backlog snapshots (successive states of one migration
-run), prints the fitness curve, and asserts the RATCHET:
-
-  1. implemented_frac is non-decreasing across consecutive snapshots,
-  2. no story un-completes (implemented -> new/acknowledged), and
-  3. sequence lookahead never exceeds --max-lookahead (default 8 ≈ the parallel
-     lane cap): stories may finish slightly out of file order under healthy
-     parallelism, but a run that leapfrogs the dependency sequence fails.
-
-Any violation is a Goodhart / regression tripwire and fails the eval (exit 1).
+"""Run monitor for the Gene-Migration attractor (ratchet over backlog snapshots).
 
 SCOPE: inner run monitor. Rows only move forward, so this cannot rank technique
 variants (v1 vs v2) — see docs/EVALUATION.md for the external objective function.
 
+DEFAULT (builder loop): landed_frac (implemented+verified) non-decreasing; no landed
+row un-completes; sequence lookahead <= --max-lookahead (default 8).
+
+--verifier (Loop 1 in play): the blind verifier may legally reopen an implemented
+row (implemented -> new). Asserts verified_frac non-decreasing and that no row ever
+LEAVES `verified` (terminal); reopens are reported, not failed; lookahead still
+checked.
+
 Usage:
-    python3 evals/hillclimb.py <snap0.tsv> <snap1.tsv> ...   # explicit series
-    python3 evals/hillclimb.py --fixture                     # bundled demo climb
-    python3 evals/hillclimb.py --self-test                   # climb + regression cases
-    python3 evals/hillclimb.py --max-lookahead N <snaps...>
+    python3 evals/hillclimb.py [--verifier] [--max-lookahead N] <snap0.tsv> ...
+    python3 evals/hillclimb.py --fixture | --fixture-verify | --self-test
 """
 from __future__ import annotations
 
@@ -30,6 +25,7 @@ from fitness import fitness, read_rows
 
 HERE = Path(__file__).parent
 FIXTURE = sorted((HERE / "fixtures" / "run").glob("*.tsv"))
+FIXTURE_VERIFY = sorted((HERE / "fixtures" / "verify").glob("*.tsv"))
 DEFAULT_MAX_LOOKAHEAD = 8
 
 
@@ -38,10 +34,7 @@ def _bar(frac: float, width: int = 24) -> str:
     return "█" * n + "·" * (width - n)
 
 
-def check(
-    series: list[list[tuple[str, str, str]]], max_lookahead: int = DEFAULT_MAX_LOOKAHEAD
-) -> tuple[bool, list[str]]:
-    """Return (climbing?, notes). Climbing = no ratchet/sequence violation."""
+def check(series, verifier=False, max_lookahead=DEFAULT_MAX_LOOKAHEAD):
     notes: list[str] = []
     ok = True
     prev_f = None
@@ -49,73 +42,89 @@ def check(
     for i, rows in enumerate(series):
         f = fitness(rows)
         notes.append(
-            f"  step {i}: {_bar(f['implemented_frac'])} "
-            f"impl={f['implemented']}/{f['total']} frac={f['implemented_frac']:.2f} "
-            f"resolved={f['resolved_frac']:.2f} lookahead={f['lookahead']}"
+            f"  step {i}: {_bar(f['verified_frac'] if verifier else f['landed_frac'])} "
+            f"impl={f['implemented']} ver={f['verified']}/{f['total']} "
+            f"landed={f['landed_frac']:.2f} verified={f['verified_frac']:.2f} lookahead={f['lookahead']}"
         )
-        if prev_f is not None and f["implemented_frac"] < prev_f["implemented_frac"] - 1e-9:
-            ok = False
-            notes.append(
-                f"    ✗ REGRESSION: implemented_frac fell "
-                f"{prev_f['implemented_frac']:.2f} -> {f['implemented_frac']:.2f}"
-            )
+        state = {r[0]: r[2] for r in rows}
+        if prev_f is not None:
+            key = "verified_frac" if verifier else "landed_frac"
+            if f[key] < prev_f[key] - 1e-9:
+                ok = False
+                notes.append(f"    ✗ REGRESSION: {key} fell {prev_f[key]:.2f} -> {f[key]:.2f}")
         if f["lookahead"] > max_lookahead:
             ok = False
-            notes.append(
-                f"    ✗ SEQUENCE: lookahead {f['lookahead']} > {max_lookahead} — "
-                f"the run is ignoring the dependency order"
-            )
-        state = {r[0]: r[2] for r in rows}
+            notes.append(f"    ✗ SEQUENCE: lookahead {f['lookahead']} > {max_lookahead}")
         for sid, st in prev_state.items():
-            if st == "implemented" and state.get(sid) in ("new", "acknowledged"):
+            now = state.get(sid)
+            if st == "verified" and now != "verified":
                 ok = False
-                notes.append(f"    ✗ REGRESSION: '{sid}' un-completed ({st} -> {state.get(sid)})")
+                notes.append(f"    ✗ REGRESSION: '{sid}' left terminal verified -> {now}")
+            elif not verifier and st == "implemented" and now in ("new", "acknowledged"):
+                ok = False
+                notes.append(f"    ✗ REGRESSION: '{sid}' un-completed ({st} -> {now})")
+            elif verifier and st == "implemented" and now == "new":
+                notes.append(f"    ↺ reopened by verifier: '{sid}'")
         prev_f, prev_state = f, state
     return ok, notes
 
 
 def _self_test() -> int:
+    ok_all = True
     good = [
-        [("s1", "core", "new"), ("s2", "loop", "new"), ("s3", "composer", "new")],
-        [("s1", "core", "implemented"), ("s2", "loop", "new"), ("s3", "composer", "new")],
-        [("s1", "core", "implemented"), ("s2", "loop", "implemented"), ("s3", "composer", "new")],
+        [("s1", "core", "new"), ("s2", "loop", "new")],
+        [("s1", "core", "implemented"), ("s2", "loop", "new")],
+        [("s1", "core", "implemented"), ("s2", "loop", "implemented")],
     ]
-    bad_uncomplete = [
+    bad = [
         [("s1", "core", "implemented"), ("s2", "loop", "implemented")],
         [("s1", "core", "new"), ("s2", "loop", "implemented")],
     ]
-    # story 11 implemented while story 1 is still new -> lookahead 10 > 8
-    bad_sequence = [
-        [(f"s{i}", f"t{i}", "new") for i in range(1, 12)],
-        [(f"s{i}", f"t{i}", "new") for i in range(1, 11)] + [("s11", "t11", "implemented")],
+    g, _ = check(good)
+    b, _ = check(bad)
+    print("builder mode: climbing:", g, "| un-complete rejected:", not b)
+    ok_all &= g and not b
+    v_good = [
+        [("s1", "core", "implemented"), ("s2", "loop", "implemented")],
+        [("s1", "core", "verified"), ("s2", "loop", "implemented")],
+        [("s1", "core", "verified"), ("s2", "loop", "new")],   # legal reopen
+        [("s1", "core", "verified"), ("s2", "loop", "implemented")],
+        [("s1", "core", "verified"), ("s2", "loop", "verified")],
     ]
-    ok_good, _ = check(good)
-    ok_bad1, _ = check(bad_uncomplete)
-    ok_bad2, _ = check(bad_sequence)
-    passed = ok_good and not ok_bad1 and not ok_bad2
-    print("self-test: climbing series detected as CLIMBING:", ok_good)
-    print("self-test: un-complete detected as REGRESSION:", not ok_bad1)
-    print("self-test: sequence leapfrog detected as violation:", not ok_bad2)
-    print("SELF-TEST", "PASS" if passed else "FAIL")
-    return 0 if passed else 1
+    v_bad = [
+        [("s1", "core", "verified"), ("s2", "loop", "implemented")],
+        [("s1", "core", "new"), ("s2", "loop", "implemented")],  # left verified
+    ]
+    vg, _ = check(v_good, verifier=True)
+    vb, _ = check(v_bad, verifier=True)
+    print("verifier mode: reopen tolerated:", vg, "| verified-exit rejected:", not vb)
+    ok_all &= vg and not vb
+    print("SELF-TEST", "PASS" if ok_all else "FAIL")
+    return 0 if ok_all else 1
 
 
 def main(argv: list[str]) -> int:
+    verifier = False
     max_lookahead = DEFAULT_MAX_LOOKAHEAD
+    if argv[:1] == ["--verifier"]:
+        verifier = True
+        argv = argv[1:]
     if argv[:1] == ["--max-lookahead"] and len(argv) >= 2:
         max_lookahead = int(argv[1])
         argv = argv[2:]
     if argv == ["--self-test"]:
         return _self_test()
-    if argv == ["--fixture"] or not argv:
-        if not FIXTURE:
-            print("no fixtures found", file=sys.stderr)
-            return 2
+    if argv == ["--fixture-verify"]:
+        paths, verifier = [str(p) for p in FIXTURE_VERIFY], True
+    elif argv == ["--fixture"] or not argv:
         paths = [str(p) for p in FIXTURE]
     else:
         paths = argv
-    print(f"GM hill-climb over {len(paths)} snapshot(s), max_lookahead={max_lookahead}:")
-    ok, notes = check([read_rows(p) for p in paths], max_lookahead)
+    if not paths:
+        print("no fixtures found", file=sys.stderr)
+        return 2
+    print(f"GM hill-climb ({'verifier' if verifier else 'builder'} mode) over {len(paths)} snapshot(s):")
+    ok, notes = check([read_rows(p) for p in paths], verifier, max_lookahead)
     print("\n".join(notes))
     print("VERDICT:", "CLIMBING ✓" if ok else "REGRESSION ✗")
     return 0 if ok else 1

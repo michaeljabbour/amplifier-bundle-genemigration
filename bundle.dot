@@ -8,7 +8,7 @@ digraph gm {
     nodesep=0.6
     ranksep=0.7
     bgcolor="white"
-    source_hash="336a1b3feedbb727d8585da81ce818eccd7e01a5e03d2670f15b2dcfe0630792"
+    source_hash="1a14c56a018163d96a1e58a63b3e9679892c05fbdd341b74a4cb58bc52112ba7"
 
     node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
     edge [fontname="Helvetica", fontsize=9]
@@ -21,7 +21,7 @@ digraph gm {
         fillcolor="#f9f9f9"
         color="#999999"
 
-        beh_gm_core [label="gm-core\n7 tools · 1 ctx\n~1289 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+        beh_gm_core [label="gm-core\n7 tools · 1 ctx\n~1531 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
     }
 
     subgraph cluster_standalones {
@@ -43,6 +43,7 @@ digraph gm {
         agt_gm_expert [label="gm-expert\n~180 tok desc", shape=box, fillcolor="#c8e6c9", style="filled,rounded"]
         agt_gm_inventory [label="gm-inventory\n~198 tok desc", shape=box, fillcolor="#c8e6c9", style="filled,rounded"]
         agt_gm_orchestrator [label="gm-orchestrator\n~191 tok desc", shape=box, fillcolor="#c8e6c9", style="filled,rounded"]
+        agt_gm_verifier [label="gm-verifier\n~236 tok desc", shape=box, fillcolor="#c8e6c9", style="filled,rounded"]
     }
 
     subgraph cluster_context {
@@ -79,6 +80,7 @@ digraph gm {
     root_gm -> beh_gm_core [label="composes"]
     beh_gm_core -> agt_gm_inventory [label="owns"]
     beh_gm_core -> agt_gm_orchestrator [label="owns"]
+    beh_gm_core -> agt_gm_verifier [label="owns"]
     beh_gm_core -> agt_gm_expert [label="owns"]
     beh_gm_core -> ctx_gm_awareness_md [style=dotted, color=purple]
     sta_gm_interactive -> root_gm [label="extends", style=dashed]

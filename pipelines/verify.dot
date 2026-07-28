@@ -1,0 +1,70 @@
+// GM — Loop 1: BLIND VERIFICATION (outer loop; runs after migrate loops land stories).
+//
+// For each backlog story in state `implemented`, a verifier BLIND to every builder
+// artifact independently derives acceptance from the SOURCE app (the executable
+// ground truth) and validates the TARGET. Pass -> terminal state `verified`.
+// Fail -> findings; the story reopens ONCE (implemented -> new, so the migrate loop
+// rebuilds with findings available), then `acknowledged`.
+//
+// WHY: the migrate loop authors the tests + probe it must pass, and its fix loop
+// could amend story cards (self-grading + mutable rubric). This loop is the
+// independent rubric-writer: it never reads story cards, builder tests, or .ai/gm_*.
+// It may READ the row's story-id + title only. Verifier -> builder info flow is
+// allowed (.ai/verify_findings/); builder -> verifier is forbidden. Story-card
+// amendment proposals (.ai/gm_amendment_proposals/) are accepted only here or by a
+// human — never by the migrate loop itself.
+//
+// ENGINE: attractor loop-pipeline (same contract as migrate.dot).
+//   SOURCE_PATH  abs path to the source app (ground truth; read+observe only)
+//   TARGET_PATH  abs path to the migrated app under verification
+//   TARGET_KIND  python | rust | new:<lang> (how to run the target, informational)
+//   FORGE_TOOL   abs path to amplifier-skill-forge/tools/forge.py
+//   LEDGER_TOOL  abs path to this bundle's pipelines/ledger.py
+//   BACKLOG      abs path to the sequenced backlog TSV
+//
+// MODELS: claude-opus-4-8 on LLM nodes.
+
+digraph gm_verify {
+    graph [
+        goal="Loop 1 — blind verification. For each backlog story in state 'implemented', independently confirm the TARGET exhibits the SOURCE app's behavior for that story. Derive your own checks by observing the SOURCE (executable ground truth), knowing only the story id + title slug. NEVER read story cards (inventory/stories/), builder artifacts (.ai/gm_*), or the target's tests — independence is the point. Pass -> 'verified' (terminal). Fail -> findings, reopen once (-> new), then 'acknowledged'. Never edit source or target code.",
+        default_fidelity="truncate",
+        default_max_retry="3"
+    ]
+
+    start [shape=Mdiamond]
+
+    CheckQueue [shape=parallelogram,
+        tool_command=": \"${SOURCE_PATH:?set SOURCE_PATH}\" \"${TARGET_PATH:?set TARGET_PATH}\" \"${FORGE_TOOL:?set FORGE_TOOL}\" \"${LEDGER_TOOL:?set LEDGER_TOOL}\" \"${BACKLOG:?set BACKLOG}\"; cd \"$TARGET_PATH\" && test \"$(LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" earliest-implemented)\" = NONE && printf done || printf process"]
+
+    SelectRow [shape=parallelogram,
+        tool_command="cd \"$TARGET_PATH\" && mkdir -p .ai/verify_checks .ai/verify_findings && set -- $(LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" earliest-implemented) && { echo \"STORY=$1\"; echo \"TITLE=$2\"; } > .ai/verify_current.env && printf ready"]
+
+    DeriveChecks [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt="You are the BLIND VERIFIER. Read $TARGET_PATH/.ai/verify_current.env for STORY and TITLE — that title slug is ALL you may know about the story's intent. GROUND TRUTH ONLY: observe the SOURCE app at $SOURCE_PATH (read its code, RUN it — directly and/or via $FORGE_TOOL) to establish what behavior the title names: exact outputs, exit codes, edge cases. FORBIDDEN (your independence is the point): reading inventory/stories/ story cards, any .ai/gm_* builder artifact, or any tests in $TARGET_PATH. Then write $TARGET_PATH/.ai/verify_checks/$STORY.sh: a bash script that runs the REAL migrated app in $TARGET_PATH (directly and/or via $FORGE_TOOL, env $FORGE) for that behavior and asserts source-equivalence (outputs AND exit codes); exit 0 iff it holds. Write nothing outside .ai/verify_checks/. $goal"]
+
+    RunChecks [shape=parallelogram,
+        tool_command="cd \"$TARGET_PATH\" && set -a && . .ai/verify_current.env && set +a && export FORGE=\"$FORGE_TOOL\" && python3 \"$FORGE\" doctor >/tmp/gm_verify_doctor 2>&1 && bash .ai/verify_checks/$STORY.sh >/tmp/gm_verify 2>&1 && printf pass || printf fail"]
+
+    MarkVerified [shape=parallelogram,
+        tool_command="cd \"$TARGET_PATH\" && set -a && . .ai/verify_current.env && set +a && LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" update $STORY verified >/dev/null && printf next"]
+
+    RecordFindings [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt="Your verification checks failed. Read /tmp/gm_verify, /tmp/gm_verify_doctor and your own script $TARGET_PATH/.ai/verify_checks/$STORY.sh (STORY from .ai/verify_current.env). Write $TARGET_PATH/.ai/verify_findings/$STORY.md: what the SOURCE does, what the TARGET does instead, and the exact failing assertion. FIRST LINE must be exactly FLAKE if the ONLY failure is a forge timing/screen-scrape artifact, otherwise exactly DEFECT. Do not edit code or your checks. $goal"]
+
+    ReopenGate [shape=parallelogram,
+        tool_command="cd \"$TARGET_PATH\" && set -a && . .ai/verify_current.env && set +a; if head -1 .ai/verify_findings/$STORY.md 2>/dev/null | grep -q FLAKE && ! test -f .ai/verify_flake_$STORY; then touch .ai/verify_flake_$STORY && printf recheck; elif test -f .ai/verify_reopened_$STORY; then LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" update $STORY acknowledged >/dev/null && printf next; else touch .ai/verify_reopened_$STORY && LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" update $STORY new >/dev/null && printf next; fi"]
+
+    exit [shape=Msquare]
+
+    start -> CheckQueue
+    CheckQueue -> exit      [condition="context.tool.last_line=done"]
+    CheckQueue -> SelectRow [condition="context.tool.last_line=process"]
+    SelectRow -> DeriveChecks
+    DeriveChecks -> RunChecks
+    RunChecks -> MarkVerified   [condition="context.tool.last_line=pass"]
+    RunChecks -> RecordFindings [condition="context.tool.last_line=fail"]
+    RecordFindings -> ReopenGate
+    ReopenGate -> RunChecks    [condition="context.tool.last_line=recheck"]
+    ReopenGate -> CheckQueue   [condition="context.tool.last_line=next", loop_restart="true"]
+    MarkVerified -> CheckQueue [loop_restart="true"]
+}

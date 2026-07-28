@@ -95,7 +95,11 @@ python3 evals/hillclimb.py --fixture      # demo curve
 python3 evals/hillclimb.py snap0.tsv snap1.tsv …   # score a real run
 ```
 
-See `evals/README.md` for what is measured and why.
+See `evals/README.md` for what is measured and why. **Loop 1 is now built:**
+`pipelines/verify.dot` + the blind `gm-verifier` agent drive `implemented`
+rows to the terminal `verified` state against independently-derived checks
+(monitor with `evals/hillclimb.py --verifier`); `docs/EVALUATION.md` holds the
+full three-loop design.
 
 ## Validation (DTU reality check)
 
@@ -130,10 +134,10 @@ the reality check is what exposed the v0.1.1 `hooks-logging` fix (see
 |---|---|
 | `bundle.md` · `behaviors/gm-core.yaml` | Root bundle + composable capability set |
 | `bundles/` | `gm-pipeline` (headless) · `gm-interactive` (run_pipeline) launchers |
-| `agents/` | `gm-inventory` · `gm-orchestrator` · `gm-expert` |
+| `agents/` | `gm-inventory` · `gm-orchestrator` · `gm-verifier` (Loop 1) · `gm-expert` |
 | `modes/gm.md` | `/gm` migration posture |
 | `context/` | `gm-awareness.md` (thin) · `gm-runbook.md` (method) · `story-template.md` |
-| `pipelines/` | `inventory.dot` · `migrate.dot` · `ledger.py` |
+| `pipelines/` | `inventory.dot` · `migrate.dot` · `verify.dot` (Loop 1) · `ledger.py` |
 | `examples/newtui-to-rust/` | Worked instance (Python/Textual → Rust/ratatui) |
 | `PRINCIPLES.md` · `docs/DESIGN_DECISIONS.md` | Non-negotiables · why it's shaped this way |
 

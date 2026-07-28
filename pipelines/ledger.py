@@ -5,13 +5,16 @@ Modeled on the attractor `semport` fixture's ledger contract. Rows are TSV:
 
     <issue>\t<slug>\t<state>
 
-state ∈ {new, implemented, acknowledged}
+state ∈ {new, implemented, verified, acknowledged}
   new          — not yet ported
   implemented  — ported, validated (unit + forge), PR opened
-  acknowledged — auto-port could not converge; handed back to a human
+  verified     — blind verifier (Loop 1) independently confirmed the behavior
+  acknowledged — could not converge (or failed verification twice); human handoff
 
 Commands (stdlib only, never raises for the pipeline's tool nodes):
   earliest              print "<issue> <slug>" of the first `new` row, or NONE
+  earliest-implemented  print "<issue> <slug>" of the first `implemented` row, or NONE
+                        (the blind verifier's queue — Loop 1)
   update <issue> <st>   set a row's state
   stats                 counts by state
   sort                  rewrite file: new first, then implemented, then acknowledged
@@ -29,7 +32,7 @@ from pathlib import Path
 # Back-compatible: unset LEDGER_FILE keeps the original ledger.tsv sibling.
 _LEDGER_ENV = os.environ.get("LEDGER_FILE")
 LEDGER = Path(_LEDGER_ENV) if _LEDGER_ENV else Path(__file__).with_name("ledger.tsv")
-ORDER = {"new": 0, "implemented": 1, "acknowledged": 2}
+ORDER = {"new": 0, "implemented": 1, "verified": 2, "acknowledged": 3}
 
 
 def _rows() -> list[list[str]]:
@@ -57,6 +60,14 @@ def main(argv: list[str]) -> int:
     if cmd == "earliest":
         for issue, slug, state in rows:
             if state == "new":
+                print(f"{issue} {slug}")
+                return 0
+        print("NONE")
+        return 0
+
+    if cmd == "earliest-implemented":
+        for issue, slug, state in rows:
+            if state == "implemented":
                 print(f"{issue} {slug}")
                 return 0
         print("NONE")

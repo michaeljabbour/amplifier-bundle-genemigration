@@ -69,7 +69,7 @@ digraph gm_migrate {
 
     // --- diagnose a failing gate; append a concrete fix ---
     AnalyzeFailure [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
-        prompt="A validation gate failed. Read /tmp/gm_gate, /tmp/gm_forge, /tmp/gm_forge_doctor and .ai/gm_impl.log. Diagnose the root cause and append a numbered 'Fix N' section to .ai/gm_plan.md with concrete, minimal changes. If the failure reveals the ACCEPTANCE CRITERIA were wrong or untestable (an inventory defect, not a code defect), say so explicitly and amend the story card in inventory/stories/ as part of the fix — the inventory is a living artifact. Do not edit source here — Implement applies the fix. Known flake: forge screen-scrape is timing-sensitive under load; if the ONLY failure is a forge assertion, say 're-run to confirm'. $goal"]
+        prompt="A validation gate failed. Read /tmp/gm_gate, /tmp/gm_forge, /tmp/gm_forge_doctor and .ai/gm_impl.log. Diagnose the root cause and append a numbered 'Fix N' section to .ai/gm_plan.md with concrete, minimal changes. If the failure reveals the ACCEPTANCE CRITERIA were wrong or untestable (an inventory defect, not a code defect), say so explicitly and write a PROPOSAL to .ai/gm_amendment_proposals/<story-id>.md — NEVER edit inventory/stories/ from this loop; only the blind verifier (pipelines/verify.dot) or a human may accept an amendment (the rubric must not be mutable by the flow it grades). Do not edit source here — Implement applies the fix. Known flake: forge screen-scrape is timing-sensitive under load; if the ONLY failure is a forge assertion, say 're-run to confirm'. $goal"]
 
     // --- bound the fix loop at 3 (own counter; orthogonal to engine default_max_retry) ---
     RetryGate [shape=parallelogram,

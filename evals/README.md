@@ -19,10 +19,17 @@ respects the plan. Three invariants:
 
 Any violation is a regression / Goodhart tripwire and fails the eval.
 
+## Loop 1 (verifier) mode
+
+With `pipelines/verify.dot` in play the ledger gains the terminal state
+`verified`, and the blind verifier may legally REOPEN an implemented row. Monitor
+those runs with `--verifier`: the protected scalar becomes `verified_frac`, no row
+may ever leave `verified`, and reopens are reported (↺) rather than failed.
+
 ## Run it
 
 ```sh
-python3 evals/hillclimb.py --self-test     # the eval proves it detects regressions
+python3 evals/hillclimb.py --self-test   # detectors for BOTH modes     # the eval proves it detects regressions
 python3 evals/hillclimb.py --fixture       # demo curve over a bundled 4-snapshot run
 python3 evals/fitness.py <backlog.tsv>     # score one backlog state
 python3 evals/hillclimb.py s0.tsv s1.tsv…  # evaluate a REAL run's snapshot series

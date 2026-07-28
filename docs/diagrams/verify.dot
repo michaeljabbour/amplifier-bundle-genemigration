@@ -1,0 +1,31 @@
+digraph verify_doc {
+  rankdir=TB; fontname="Helvetica"; labelloc=t;
+  label="verify.dot — documentation view (derived; the executable graph is pipelines/verify.dot)";
+  node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10, color="#546e7a"];
+  start [shape=Mdiamond, style=filled, fillcolor="#c8e6c9"];
+  CheckQueue [shape=parallelogram, style=filled, fillcolor="#fff9c4"];
+  SelectRow [shape=parallelogram, style=filled, fillcolor="#fff9c4"];
+  DeriveChecks [shape=box, style="rounded,filled", fillcolor="#bbdefb"];
+  RunChecks [shape=parallelogram, style=filled, fillcolor="#fff9c4"];
+  MarkVerified [shape=parallelogram, style=filled, fillcolor="#fff9c4"];
+  RecordFindings [shape=box, style="rounded,filled", fillcolor="#bbdefb"];
+  ReopenGate [shape=parallelogram, style=filled, fillcolor="#fff9c4"];
+  exit [shape=Msquare, style=filled, fillcolor="#ffcdd2"];
+  start -> CheckQueue;
+  CheckQueue -> exit [label="done"];
+  CheckQueue -> SelectRow [label="process"];
+  SelectRow -> DeriveChecks;
+  DeriveChecks -> RunChecks;
+  RunChecks -> MarkVerified [label="pass"];
+  RunChecks -> RecordFindings [label="fail"];
+  RecordFindings -> ReopenGate;
+  ReopenGate -> RunChecks [label="recheck"];
+  ReopenGate -> CheckQueue [label="next"];
+  MarkVerified -> CheckQueue [label="loop ↺", style=dashed];
+  subgraph cluster_legend {
+    label="legend"; fontsize=10; style=dashed; color="#90a4ae";
+    l1 [shape=box, style="rounded,filled", fillcolor="#bbdefb", label="LLM agent node"];
+    l2 [shape=parallelogram, style=filled, fillcolor="#fff9c4", label="deterministic gate/tool\n(routes on last stdout line)"];
+    l1 -> l2 [label="edge label = routing value", style=invis];
+  }
+}

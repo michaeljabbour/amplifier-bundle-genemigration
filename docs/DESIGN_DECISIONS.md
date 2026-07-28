@@ -72,3 +72,13 @@ never created, the CLI finalizer raises `Session '<id>' not found`, and nothing
 persists (no resume/events). For an attractor bundle whose runbook promises
 resumable multi-hour runs this is disqualifying — `hooks-logging` is part of
 gm-core, config mirroring foundation `behaviors/logging.yaml`.
+
+## 11. Loop 1 — the blind verifier is a separate GRAPH, not a node in the build loop
+Independence is about who writes the rubric, so the verifier lives in its own
+pipeline (`verify.dot`) with its own queue (`ledger.py earliest-implemented`), its
+own artifacts namespace (`.ai/verify_*`), and explicit read-prohibitions on every
+builder artifact. `verified` is the terminal ledger state; a verification failure
+reopens the row once (implemented → new, findings attached — verifier→builder flow
+is the allowed direction) and then acknowledges. The run monitor grows a
+`--verifier` mode whose protected scalar is `verified_frac` and which tolerates the
+now-legal reopen dip while still rejecting any row that leaves `verified`.

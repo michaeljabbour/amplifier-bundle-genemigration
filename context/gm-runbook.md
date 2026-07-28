@@ -72,3 +72,16 @@ await run_pipeline(open("pipelines/migrate.dot").read(),
 ```
 Or export the same names as env vars before `amplifier run` — `${VAR:?}` guards
 fail loud. (A mounted orchestrator's `config.params` does NOT reach `tool_command`.)
+
+## Loop 1 — blind verification (after rows land)
+
+Rows landed by the build loop are `implemented` — gated, but by gates the flow
+itself authored. Loop 1 (`gm:pipelines/verify.dot` · the `gm-verifier` agent)
+independently drives them to the terminal state **`verified`**: a verifier BLIND to
+every builder artifact derives its own checks from the ground truth (the SOURCE app, knowing only the story id + title)
+and validates through a real terminal. Fail ⇒ findings in `.ai/verify_findings/`,
+row reopens ONCE (`implemented → new` — the build loop rebuilds with findings
+readable), then `acknowledged`. Verifier → builder info flow is allowed; builder →
+verifier is forbidden. Story-card amendment proposals (.ai/gm_amendment_proposals/) are accepted or rejected ONLY here or by a human.
+Run order: build loop to quiescence → verify loop to quiescence → done when every
+row is `verified` or `acknowledged`. Monitor with `evals/hillclimb.py --verifier`.

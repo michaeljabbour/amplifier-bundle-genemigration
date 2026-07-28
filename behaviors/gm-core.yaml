@@ -32,6 +32,7 @@ agents:
   include:
     - gm:gm-inventory
     - gm:gm-orchestrator
+    - gm:gm-verifier
     - gm:gm-expert
 context:
   # THIN (<500 tokens). The heavy runbook + story template load on demand from the
