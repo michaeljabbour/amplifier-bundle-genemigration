@@ -1,7 +1,7 @@
 ---
 bundle:
   name: gm
-  version: 0.1.0
+  version: 0.1.1
   description: >
     GM (Gene Migration) — a two-phase attractor that migrates a whole app from one
     language to another. Phase 1 reverse-engineers the source app into robust,

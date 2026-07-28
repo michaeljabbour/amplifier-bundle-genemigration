@@ -2,18 +2,18 @@ digraph gm {
     rankdir=LR
     fontname="Helvetica"
     fontsize=12
-    label="gm v0.1.0 — bundle repo"
+    label="gm v0.1.1 — bundle repo"
     labelloc=t
     labeljust=c
     nodesep=0.6
     ranksep=0.7
     bgcolor="white"
-    source_hash="00316172e3128f562a8406c6c2d8de10741d0b54d2642130eafbf73577d7909c"
+    source_hash="336a1b3feedbb727d8585da81ce818eccd7e01a5e03d2670f15b2dcfe0630792"
 
     node [fontname="Helvetica", fontsize=11, style="filled,rounded"]
     edge [fontname="Helvetica", fontsize=9]
 
-    root_gm [label="gm v0.1.0\n0 tools · 0 agents\n~461 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
+    root_gm [label="gm v0.1.1\n0 tools · 0 agents\n~461 tok aggregate", shape=box, fillcolor="#80cbc4", style="filled,rounded,bold", penwidth=2]
 
     subgraph cluster_behaviors {
         label="Behaviors"
@@ -21,7 +21,7 @@ digraph gm {
         fillcolor="#f9f9f9"
         color="#999999"
 
-        beh_gm_core [label="gm-core\n6 tools · 1 ctx\n~1132 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
+        beh_gm_core [label="gm-core\n7 tools · 1 ctx\n~1289 tok", shape=box, fillcolor="#e0f2f1", style="filled,rounded"]
     }
 
     subgraph cluster_standalones {

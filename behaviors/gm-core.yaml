@@ -14,6 +14,16 @@ tools:
     config:
       gate_policy: warn
 hooks:
+  # Session durability: hooks-logging materializes the session directory and
+  # streams events.jsonl as the session runs — WITHOUT it, `amplifier run`
+  # completes but the session never persists (no resume, no events) and the CLI
+  # errors at finalize with "Session '<id>' not found" (session_store.py).
+  # Found via DTU reality check; config mirrors foundation behaviors/logging.yaml.
+  - module: hooks-logging
+    source: git+https://github.com/microsoft/amplifier-module-hooks-logging@main
+    config:
+      mode: session-only
+      session_log_template: ~/.amplifier/projects/{project}/sessions/{session_id}/events.jsonl
   - module: hooks-mode
     source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/hooks-mode
     config:

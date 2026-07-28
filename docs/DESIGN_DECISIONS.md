@@ -65,3 +65,10 @@ recurse (foundation guidance).
 `.ai/gm_retries` bounds the fix loop at 3 (a gate printing `fail` at exit 0 is a
 SUCCESS outcome, not engine-retried); the engine's `default_max_retry=3` covers
 transient in-node exceptions on box nodes. Different failures; both kept.
+
+## 10. Session durability requires the logging hook (DTU reality-check finding)
+Same finding as genetransfer §9: without `hooks-logging` the session directory is
+never created, the CLI finalizer raises `Session '<id>' not found`, and nothing
+persists (no resume/events). For an attractor bundle whose runbook promises
+resumable multi-hour runs this is disqualifying — `hooks-logging` is part of
+gm-core, config mirroring foundation `behaviors/logging.yaml`.
