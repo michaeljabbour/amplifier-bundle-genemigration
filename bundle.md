@@ -37,4 +37,6 @@ verified against its own derived acceptance criteria.
   migrate the code story-by-story in sequence, gated by the acceptance criteria
   (target-language tests) + a real-terminal forge check, one PR per story.
 
-See `README.md` for the knobs and `PRINCIPLES.md` for the non-negotiables.
+Also on board: the `/gm` mode (migration posture) and `gm-expert` (plan an
+instance before running one). See `README.md` for the knobs and `PRINCIPLES.md`
+for the non-negotiables.

@@ -31,7 +31,7 @@ never-transliterated, sequence-is-the-plan, living acceptance criteria, gate == 
 
 ## Pitfalls
 - Params reach `tool_command` only via env vars / run_pipeline — never a mounted
-  orchestrator's `config.params` (see DESIGN_DECISIONS.md §1).
+  orchestrator's `config.params` (see DESIGN_DECISIONS.md §4).
 - Never remove `... && printf pass || printf fail` from a gate node (stale
   last_line misroutes on non-zero exit).
 - `inventory/` artifacts belong to the INSTANCE (the target repo), not this bundle.

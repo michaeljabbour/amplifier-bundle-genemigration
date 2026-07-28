@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gene-transfer ledger — one row per amplifier-app-cli capability being ported.
+"""Gene-Migration ledger — one row per surface/story being migrated.
 
 Modeled on the attractor `semport` fixture's ledger contract. Rows are TSV:
 
@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 # Ledger file is overridable so one tool can serve several pipelines
-# (e.g. the app-cli backlog ledger and the opencode-transfer ledger).
+# (e.g. the inventory ledger over surfaces.tsv and the migration ledger over backlog.tsv).
 # Back-compatible: unset LEDGER_FILE keeps the original ledger.tsv sibling.
 _LEDGER_ENV = os.environ.get("LEDGER_FILE")
 LEDGER = Path(_LEDGER_ENV) if _LEDGER_ENV else Path(__file__).with_name("ledger.tsv")
