@@ -24,6 +24,7 @@ never-transliterated, sequence-is-the-plan, living acceptance criteria, gate == 
 
 ## Verification gradient (before a PR)
 - **Structural:** graphviz parses BOTH dots; `python3 pipelines/ledger.py stats` runs.
+- **Eval:** `python3 evals/hillclimb.py --self-test && python3 evals/hillclimb.py --fixture` (the hill-climbing eval and its regression + sequence detectors pass).
 - **Conformance:** `/audit-bundle` + `validate-bundle-repo`.
 - **Live run** (required when touching graphs/orchestration): inventory a small
   scratch app, then migrate one story green end-to-end.

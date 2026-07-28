@@ -40,17 +40,62 @@ Sibling to [`amplifier-bundle-genetransfer`](https://github.com/michaeljabbour/a
   story card — the spec is corrected, never force-greened.
 - **Forge-woven QA + gate == CI**, same as HGT.
 
-## Install & run
+## Usage
+
+**1. Install and activate**
 
 ```sh
 amplifier bundle add git+https://github.com/michaeljabbour/amplifier-bundle-genemigration@main
 amplifier bundle use gm            # /gm mode + gm-inventory / gm-orchestrator / gm-expert
 ```
 
-- **Orchestrator-as-engine (recommended):** `/gm`, then `gm-inventory` (Phase 1) →
-  review the backlog → `gm-orchestrator` (Phase 2).
-- **run_pipeline engine:** `bundles/gm-interactive.yaml`; pass `SOURCE_PATH`,
-  `TARGET_PATH`, `TARGET_KIND`, `BACKLOG`, … See `context/gm-runbook.md`.
+**2. Define the knobs** (see `examples/newtui-to-rust/` for a filled-in instance):
+
+```sh
+export SOURCE_PATH=/abs/path/to/source-app   SOURCE_KIND=python   # read+observe only
+export TARGET_PATH=/abs/path/to/target-repo  TARGET_KIND=rust     # may be new/empty
+export FORGE_TOOL=~/.claude/skills/amplifier-skill-forge/tools/forge.py
+export LEDGER_TOOL=/abs/path/to/this-bundle/pipelines/ledger.py
+export SURFACES=$TARGET_PATH/inventory/surfaces.tsv
+export BACKLOG=$TARGET_PATH/inventory/backlog.tsv
+```
+
+**3. Phase 1 — build the inventory.** `/gm`, then delegate to `gm-inventory` (or run
+`pipelines/inventory.dot`): it enumerates the source's surfaces, derives user
+stories + Given/When/Then acceptance per surface (observing the REAL app via forge),
+and writes the dependency-sequenced backlog into `$TARGET_PATH/inventory/`.
+
+**4. Review the backlog** — read `inventory/README.md` + a sample of story cards;
+fix vague acceptance now, not mid-migration. The backlog's file order is the plan.
+
+**5. Phase 2 — migrate.** Delegate to `gm-orchestrator` (or run
+`pipelines/migrate.dot`): stories rebuild in sequence, idiomatic in the target
+language, each gated by its acceptance tests + a forge boot of the migrated app,
+one PR per story on `gm/<story>`. Bounded ≤3 attempts, then `acknowledged` + a
+handoff file under `.ai/gm_blocked/`.
+
+**6. Monitor & finish** — the backlog is the source of truth:
+`LEDGER_FILE=$BACKLOG python3 pipelines/ledger.py stats`. Done = no `new` rows.
+(run_pipeline engine alternative: `bundles/gm-interactive.yaml`; headless:
+`bundles/gm-pipeline.yaml` with the env vars exported, launched from the repo root.
+See `context/gm-runbook.md`.)
+
+## Evaluation (hill-climbing)
+
+The bundle ships a simple hill-climbing eval (`evals/`): fitness =
+`implemented_frac` over the backlog (quality is a precondition — only stories whose
+acceptance tests + forge check passed count), with a **ratchet check** — fitness
+never falls, no story un-completes — plus a GM-specific **sequence check**
+(lookahead past the earliest unfinished story stays within the parallel-lane cap;
+leapfrogging the plan fails).
+
+```sh
+python3 evals/hillclimb.py --self-test    # prove the detector works
+python3 evals/hillclimb.py --fixture      # demo curve
+python3 evals/hillclimb.py snap0.tsv snap1.tsv …   # score a real run
+```
+
+See `evals/README.md` for what is measured and why.
 
 ## Layout
 
