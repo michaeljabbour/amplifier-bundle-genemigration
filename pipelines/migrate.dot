@@ -77,7 +77,7 @@ digraph gm_migrate {
 
     // --- converged: commit + PR, mark implemented ---
     Commit [shape=parallelogram,
-        tool_command="cd \"$TARGET_PATH\" && set -a && . .ai/gm_current.env && set +a && git add -A -- ':!.ai' && git commit -q -m \"feat(gm): $STORY\" && git push -q -u origin HEAD && gh pr create --fill --base main --head gm/$STORY --label gene-migration >/tmp/gm_pr 2>&1; LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" update $STORY implemented >/dev/null && printf next"]
+        tool_command="cd \"$TARGET_PATH\" && set -a && . .ai/gm_current.env && set +a && git add -A -- ':!.ai' ':!*.pyc' ':!__pycache__' && git commit -q -m \"feat(gm): $STORY\" && git push -q -u origin HEAD && gh pr create --fill --base main --head gm/$STORY --label gene-migration >/tmp/gm_pr 2>&1; LEDGER_FILE=$BACKLOG python3 \"$LEDGER_TOOL\" update $STORY implemented >/dev/null && printf next"]
 
     // --- could not converge: hand back to a human, keep the sequence moving ---
     MarkBlocked [shape=parallelogram,

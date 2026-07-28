@@ -97,6 +97,28 @@ python3 evals/hillclimb.py snap0.tsv snap1.tsv …   # score a real run
 
 See `evals/README.md` for what is measured and why.
 
+## Validation (DTU reality check)
+
+Both phases have been proven end-to-end in an isolated Digital Twin Universe
+(bundle v0.1.1, 2026-07-28), from a pristine empty target:
+
+- **Inventory** — root session `5cb0946f…` delegated to the real `gm-inventory`
+  agent (child session `…_gm:gm-inventory`, `parent_id == root` — genuine
+  multi-session delegation), which reverse-engineered a 2-surface CLI into **6
+  dependency-sequenced stories** (`cli-1…cli-4` foundations first, then
+  `greet-1`, `farewell-1`), acceptance criteria pinning exact strings, trailing
+  newlines, and exit codes.
+- **Migration** — session `98f52fae…` took the **earliest** story (`cli-1`),
+  scaffolded CI from scratch in the empty `new:python` target (gate == CI from
+  story #1), turned every Given/When/Then into a test, passed both gates, pushed
+  `gm/cli-1`, `main` stayed pristine — and the bundle's own eval scored the run
+  **CLIMBING ✓** (0/6 → 1/6, lookahead = 0: perfectly in sequence).
+
+Sessions are durable (root + child each persisted `events.jsonl` +
+`metadata.json` + `transcript.jsonl`, resumable). That property is load-bearing —
+the reality check is what exposed the v0.1.1 `hooks-logging` fix (see
+`docs/DESIGN_DECISIONS.md` §10).
+
 ## Diagrams
 
 - **Phase 1 flow** (inventory): [`docs/diagrams/inventory.png`](docs/diagrams/inventory.png) · **Phase 2 flow** (migration loop): [`docs/diagrams/migrate.png`](docs/diagrams/migrate.png) — edge labels = routing; derived from the executable graphs by `python3 docs/diagrams/generate.py`.
