@@ -1,0 +1,26 @@
+# gm-pipeline — headless/CI launcher. Runs migrate.dot on the loop-pipeline engine.
+# NOTE: a mounted orchestrator substitutes params into PROMPTS only, not tool_command.
+# Both graphs therefore read params as UPPERCASE ENV VARS (fail-loud) — export before
+# `amplifier run`:
+#   export SOURCE_PATH=... TARGET_PATH=... TARGET_KIND=rust \
+#          FORGE_TOOL=~/.claude/skills/amplifier-skill-forge/tools/forge.py \
+#          LEDGER_TOOL=<abs path to this repo>/pipelines/ledger.py \
+#          BACKLOG=$TARGET_PATH/inventory/backlog.tsv
+# (Inventory phase additionally needs SOURCE_KIND and SURFACES; point dot_file at
+# pipelines/inventory.dot for that phase.)
+# For param-driven runs that reach tool_command too, prefer run_pipeline (see README).
+#
+# LAUNCH FROM THE REPO ROOT. The engine resolves dot_file against the process CWD
+# (bare open(), no bundle-relative resolution), so `dot_file: pipelines/migrate.dot`
+# only resolves when CWD == this repo's root.
+bundle:
+  name: gm-pipeline
+  version: 0.1.0
+  description: Headless launcher for the Gene-Migration attractor (loop-pipeline engine).
+includes:
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-attractor@main#subdirectory=bundles/attractor-pipeline.yaml
+  - bundle: gm:behaviors/gm-core
+session:
+  orchestrator:
+    config:
+      dot_file: pipelines/migrate.dot

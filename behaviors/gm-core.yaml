@@ -1,0 +1,30 @@
+# gm-core — the composable Gene-Migration behavior. Provides the migration tools,
+# the /gm mode system, the inventory/orchestrator/expert agents, and thin awareness.
+tools:
+  - module: tool-filesystem
+    source: git+https://github.com/microsoft/amplifier-module-tool-filesystem@main
+  - module: tool-bash
+    source: git+https://github.com/microsoft/amplifier-module-tool-bash@main
+  - module: tool-search
+    source: git+https://github.com/microsoft/amplifier-module-tool-search@main
+  - module: tool-task
+    source: git+https://github.com/microsoft/amplifier-module-tool-task@main
+  - module: tool-mode
+    source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/tool-mode
+    config:
+      gate_policy: warn
+hooks:
+  - module: hooks-mode
+    source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/hooks-mode
+    config:
+      search_paths: []
+agents:
+  include:
+    - gm:gm-inventory
+    - gm:gm-orchestrator
+    - gm:gm-expert
+context:
+  # THIN (<500 tokens). The heavy runbook + story template load on demand from the
+  # agents and the /gm mode, not here.
+  include:
+    - gm:context/gm-awareness.md

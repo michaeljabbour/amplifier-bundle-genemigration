@@ -1,0 +1,11 @@
+# gm-interactive — conversational launcher. Composes attractor-interactive (provides
+# the run_pipeline tool + pipeline awareness) plus gm-core (migration tools, /gm mode,
+# inventory/orchestrator/expert agents). Recommended engine path: run_pipeline seeds
+# params as flat context keys, reaching BOTH prompts and tool_command.
+bundle:
+  name: gm-interactive
+  version: 0.1.0
+  description: Conversational launcher for the Gene-Migration attractor (run_pipeline available).
+includes:
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-attractor@main#subdirectory=bundles/attractor-interactive.yaml
+  - bundle: gm:behaviors/gm-core

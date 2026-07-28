@@ -1,0 +1,62 @@
+// Gene-Migration — INVENTORY phase (reverse requirements engineering).
+//
+// Studies the SOURCE app (code + observed behavior via forge) and produces a
+// dependency-SEQUENCED backlog of user stories + testable acceptance criteria that
+// drives the migration. The sequence IS the migration plan: foundational stories
+// (data model, core loop, primitives) come before the features that depend on them.
+//
+// ENGINE: attractor loop-pipeline. box = LLM agent; parallelogram = tool node routed
+// on its last stdout line (EXACT match; non-zero exit leaves last_line stale — every
+// gate ends `... && printf X || printf Y`).
+//
+// PARAMS (UPPERCASE env vars, fail-loud; or run_pipeline params of the same name):
+//   SOURCE_PATH  abs path to the source app (language A) — read + observe, never edit
+//   SOURCE_KIND  language A (python|rust|node|go|...) — how to boot/observe it
+//   TARGET_PATH  abs path to the migration home (language B repo; may be new/empty).
+//                inventory/ artifacts are written here — the living migration plan.
+//   FORGE_TOOL   abs path to amplifier-skill-forge/tools/forge.py
+//   LEDGER_TOOL  abs path to this bundle's pipelines/ledger.py (decoupled from repos)
+//   SURFACES     abs path to the surfaces worklist TSV (e.g. $TARGET_PATH/inventory/surfaces.tsv)
+//   BACKLOG      abs path to the sequenced story backlog TSV the migration consumes
+//
+// MODELS: claude-opus-4-8 on every LLM node.
+
+digraph gm_inventory {
+    graph [
+        goal="Reverse-engineer the SOURCE app into robust, dependency-SEQUENCED user stories with testable acceptance criteria that will drive a language migration. Study the code AND observe the running app via forge — stories describe USER-OBSERVABLE behavior (As a <role>, I want <capability>, so that <benefit>); acceptance is Given/When/Then, concrete and testable in the TARGET language. Sequence so foundational stories (data model, core loop, primitives) precede dependent features. Never edit the source. Output the sequenced backlog the migration attractor consumes.",
+        default_fidelity="truncate",
+        default_max_retry="3"
+    ]
+
+    start [shape=Mdiamond]
+
+    // --- enumerate the source app's user-facing surfaces (runs once) ---
+    EnumerateSurfaces [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt=": \"${SOURCE_PATH:?set SOURCE_PATH}\" \"${TARGET_PATH:?set TARGET_PATH}\" \"${FORGE_TOOL:?set FORGE_TOOL}\" \"${LEDGER_TOOL:?set LEDGER_TOOL}\" \"${SURFACES:?set SURFACES}\"; Study $SOURCE_PATH (README, entry points, commands, screens, config) and BOOT it via $FORGE_TOOL to see its real user-facing surfaces. Enumerate the SURFACES — screens, commands, major flows/features a user interacts with. For each, run `LEDGER_FILE=$SURFACES python3 \\\"$LEDGER_TOOL\\\" add <surface-id> <short-name>` (idempotent). mkdir -p $TARGET_PATH/inventory/stories. Do NOT edit the source. $goal"]
+
+    // --- loop head: surfaces left to mine? (deterministic) ---
+    CheckSurfaces [shape=parallelogram,
+        tool_command="cd \"$TARGET_PATH\" && test \"$(LEDGER_FILE=$SURFACES python3 \"$LEDGER_TOOL\" earliest)\" = NONE && printf done || printf process"]
+
+    // --- pick the next surface ---
+    SelectSurface [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt="Run `LEDGER_FILE=$SURFACES python3 \\\"$LEDGER_TOOL\\\" earliest` in $TARGET_PATH — it prints '<surface-id> <name>'. Write $TARGET_PATH/.ai/gm_surface.env with exactly one line `SURFACE=<surface-id>`. $goal"]
+
+    // --- derive user stories + acceptance criteria for that surface ---
+    DeriveStories [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt="Read $TARGET_PATH/.ai/gm_surface.env for SURFACE. Study how $SOURCE_PATH implements that surface (the real code) AND drive it via $FORGE_TOOL to observe its actual behavior, edge cases, and states. Write $TARGET_PATH/inventory/stories/$SURFACE.md following the story template: one or more user stories (As a <role>, I want <capability>, so that <benefit>), each with ACCEPTANCE CRITERIA as Given/When/Then that are concrete and testable in the TARGET language, plus SOURCE POINTERS (file:symbol) and DEPENDS-ON notes (which other surfaces/stories this builds on). Behavior fidelity is the goal — capture what the app does, not how its language happens to do it. Then mark the surface done: `LEDGER_FILE=$SURFACES python3 \\\"$LEDGER_TOOL\\\" update $SURFACE implemented`. $goal"]
+
+    // --- all surfaces mined: sequence the whole backlog by dependency ---
+    SequenceBacklog [shape=box, llm_provider="anthropic", llm_model="claude-opus-4-8",
+        prompt="Read every $TARGET_PATH/inventory/stories/*.md. Produce the MIGRATION SEQUENCE: order ALL stories by dependency so foundational stories (data model, core session/loop, shared primitives, protocol) precede the features that consume them, using each story's DEPENDS-ON notes. Write the ordered backlog by appending rows IN SEQUENCE: for each story run `LEDGER_FILE=$BACKLOG python3 \\\"$LEDGER_TOOL\\\" add <story-id> <title-slug>` (file order = sequence; the migration takes them earliest-first). Verify each acceptance criterion is concrete and testable; fix any that are vague. Write $TARGET_PATH/inventory/README.md summarizing the plan (surfaces, story count, the sequence rationale). $goal"]
+
+    exit [shape=Msquare]
+
+    start -> EnumerateSurfaces
+    EnumerateSurfaces -> CheckSurfaces
+    CheckSurfaces -> SequenceBacklog [condition="context.tool.last_line=done"]
+    CheckSurfaces -> SelectSurface   [condition="context.tool.last_line=process"]
+    SelectSurface -> DeriveStories
+    DeriveStories -> CheckSurfaces   [loop_restart="true"]
+    SequenceBacklog -> exit
+}
