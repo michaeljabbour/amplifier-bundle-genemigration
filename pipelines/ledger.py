@@ -12,9 +12,13 @@ state ∈ {new, implemented, verified, acknowledged}
   acknowledged — could not converge (or failed verification twice); human handoff
 
 Commands (stdlib only, never raises for the pipeline's tool nodes):
-  earliest              print "<issue> <slug>" of the first `new` row, or NONE
-  earliest-implemented  print "<issue> <slug>" of the first `implemented` row, or NONE
+  earliest              print "<key> <label>" of the first `new` row, or NONE
+  earliest-implemented  print "<key> <label>" of the first `implemented` row, or NONE
                         (the blind verifier's queue — Loop 1)
+                        The FIRST token is always the ledger KEY (col 0) — use it for
+                        updates, artifact names, and result lines. The second token is
+                        a label whose meaning varies by pipeline (HGT: target route;
+                        GM: title slug) — never treat it as the key.
   update <issue> <st>   set a row's state
   stats                 counts by state
   sort                  rewrite file: new first, then implemented, then acknowledged

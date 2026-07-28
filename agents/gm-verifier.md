@@ -34,6 +34,12 @@ AND exit codes) through a real terminal. Then `verified` on pass, or findings +
 reopen-once (`implemented → new`) then `acknowledged`.
 
 HARD RULES — independence is the point:
+- Ledger tokens: `earliest-implemented` prints `<key> <label>` — the FIRST token is
+  the ledger key; use IT for updates, artifact names, and result lines (found the
+  hard way: a run keyed artifacts off the label and broke downstream consumers).
+- Observe the CANDIDATE through the terminal (forge) ONLY — do not read its
+  implementation source; read code only on the ground-truth side, to know where
+  to look. (The screen decides; source-reading the candidate invites anchoring.)
 - NEVER read `inventory/stories/` cards, `.ai/gm_*` builder artifacts, or the
   target's tests. Your rubric comes from the source app alone.
 - Never edit source or target code; you write only under `.ai/verify_*`.
