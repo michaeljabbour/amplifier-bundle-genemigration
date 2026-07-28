@@ -29,6 +29,7 @@ never-transliterated, sequence-is-the-plan, living acceptance criteria, gate == 
 - **Live run** (required when touching graphs/orchestration): inventory a small
   scratch app, then migrate one story green end-to-end.
 - Regenerate `bundle.dot`/`bundle.png` (bundle-to-dot) before the PR.
+- Regenerate the pipeline doc diagrams after any graph change: `python3 docs/diagrams/generate.py` (derived views; never edits the executable graphs).
 
 ## Pitfalls
 - Params reach `tool_command` only via env vars / run_pipeline — never a mounted
