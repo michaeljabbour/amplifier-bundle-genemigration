@@ -38,6 +38,12 @@ order; exit 1 = a regression or a sequence violation, with the offending step na
 
 ## Honest limits
 
+**Scope (sharpened after external review):** this is the INNER run monitor.
+Because ledger rows only ever move forward, within-run monotonicity is close to
+tautological — this eval detects broken runs, it cannot rank technique variants.
+The technique-level objective function (frozen answer key, external grading,
+v1-vs-v2 on identical tasks) is designed in `docs/EVALUATION.md`.
+
 This eval scores the ATTRACTOR's convergence behavior — progress, monotonicity, and
 sequence adherence. It does **not** re-judge an individual story's migration quality
 beyond what its gates enforced (acceptance tests + forge are that judgment), and it

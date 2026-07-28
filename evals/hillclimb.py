@@ -12,6 +12,9 @@ run), prints the fitness curve, and asserts the RATCHET:
 
 Any violation is a Goodhart / regression tripwire and fails the eval (exit 1).
 
+SCOPE: inner run monitor. Rows only move forward, so this cannot rank technique
+variants (v1 vs v2) — see docs/EVALUATION.md for the external objective function.
+
 Usage:
     python3 evals/hillclimb.py <snap0.tsv> <snap1.tsv> ...   # explicit series
     python3 evals/hillclimb.py --fixture                     # bundled demo climb
