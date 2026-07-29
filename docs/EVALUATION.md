@@ -85,7 +85,11 @@ Threats, named up front:
 
 ## Roadmap
 
-1. `verify.dot` + blind-verifier agent (closes Loop 1).
-2. Answer-key pilot on a scoped codex slice — `amplifier-evaluation` harness,
-   one DTU per variant, K≥3 (closes Loop 2).
-3. Only then tune the technique, with Loop 2 as arbiter.
+1. ✅ DELIVERED — `verify.dot` + blind-verifier agent; DTU-validated (2 positive,
+   1 sabotage correctly rejected, blindness audit clean).
+2. ✅ PILOT DELIVERED — `benchmarks/codex-apply-patch/`: grader calibrated 21/21
+   vs the real codex-rs; GM-v1 scored externally (headline 13/16; see
+   `benchmarks/codex-apply-patch/RESULTS.md` incl. the design defects to fix
+   before any v1-vs-v2 comparison).
+3. NEXT (not started): fix the pilot's Loop-2 defects, then v1-vs-v2 with K≥3 —
+   only then tune the technique, with Loop 2 as arbiter.
