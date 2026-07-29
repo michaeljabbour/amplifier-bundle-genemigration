@@ -1,0 +1,11 @@
+[package]
+name = "shim"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "codex-apply-patch-shim"
+path = "src/main.rs"
+
+[dependencies]
+codex-apply-patch = { path = "../crates/codex-apply-patch" }

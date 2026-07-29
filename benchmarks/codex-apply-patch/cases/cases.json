@@ -1,0 +1,219 @@
+[
+  {
+    "name": "add_file_creates_content",
+    "source": "upstream/rs/lib.rs::test_add_file_hunk_creates_file_with_contents",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Add File: add.txt\n+ab\n+cd\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "add.txt": "ab\ncd\n"
+    }
+  },
+  {
+    "name": "delete_file_removes_it",
+    "source": "upstream/rs/lib.rs::test_delete_file_hunk_removes_file",
+    "files_before": {
+      "del.txt": "x"
+    },
+    "patch": "*** Begin Patch\n*** Delete File: del.txt\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "del.txt": null
+    }
+  },
+  {
+    "name": "update_single_chunk_modifies_content",
+    "source": "upstream/rs/lib.rs::test_update_file_hunk_modifies_content",
+    "files_before": {
+      "update.txt": "foo\nbar\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: update.txt\n@@\n foo\n-bar\n+baz\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "update.txt": "foo\nbaz\n"
+    }
+  },
+  {
+    "name": "update_file_can_move",
+    "source": "upstream/rs/lib.rs::test_update_file_hunk_can_move_file",
+    "files_before": {
+      "src.txt": "line\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: src.txt\n*** Move to: dst.txt\n@@\n-line\n+line2\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "src.txt": null,
+      "dst.txt": "line2\n"
+    }
+  },
+  {
+    "name": "update_multiple_chunks_single_file",
+    "source": "upstream/rs/lib.rs::test_multiple_update_chunks_apply_to_single_file",
+    "files_before": {
+      "multi.txt": "foo\nbar\nbaz\nqux\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: multi.txt\n@@\n foo\n-bar\n+BAR\n@@\n baz\n-qux\n+QUX\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "multi.txt": "foo\nBAR\nbaz\nQUX\n"
+    }
+  },
+  {
+    "name": "update_interleaved_changes_with_eof_append",
+    "source": "upstream/rs/lib.rs::test_update_file_hunk_interleaved_changes",
+    "files_before": {
+      "interleaved.txt": "a\nb\nc\nd\ne\nf\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: interleaved.txt\n@@\n a\n-b\n+B\n@@\n c\n d\n-e\n+E\n@@\n f\n+g\n*** End of File\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "interleaved.txt": "a\nB\nc\nd\nE\nf\ng\n"
+    }
+  },
+  {
+    "name": "update_unicode_dash_fuzzy_match",
+    "source": "upstream/rs/lib.rs::test_update_line_with_unicode_dash",
+    "files_before": {
+      "unicode.py": "import asyncio  # local import – avoids top‑level dep\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: unicode.py\n@@\n-import asyncio  # local import - avoids top-level dep\n+import asyncio  # HELLO\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "unicode.py": "import asyncio  # HELLO\n"
+    }
+  },
+  {
+    "name": "update_first_line_replacement",
+    "source": "upstream/rs/lib.rs::test_unified_diff_first_line_replacement",
+    "files_before": {
+      "first.txt": "foo\nbar\nbaz\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: first.txt\n@@\n-foo\n+FOO\n bar\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "first.txt": "FOO\nbar\nbaz\n"
+    }
+  },
+  {
+    "name": "update_last_line_replacement",
+    "source": "upstream/rs/lib.rs::test_unified_diff_last_line_replacement",
+    "files_before": {
+      "last.txt": "foo\nbar\nbaz\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: last.txt\n@@\n foo\n bar\n-baz\n+BAZ\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "last.txt": "foo\nbar\nBAZ\n"
+    }
+  },
+  {
+    "name": "update_insert_at_eof",
+    "source": "upstream/rs/lib.rs::test_unified_diff_insert_at_eof",
+    "files_before": {
+      "insert.txt": "foo\nbar\nbaz\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: insert.txt\n@@\n+quux\n*** End of File\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "insert.txt": "foo\nbar\nbaz\nquux\n"
+    }
+  },
+  {
+    "name": "update_interleaved_variant_narrow_context",
+    "source": "upstream/rs/lib.rs::test_unified_diff_interleaved_changes",
+    "files_before": {
+      "interleaved2.txt": "a\nb\nc\nd\ne\nf\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: interleaved2.txt\n@@\n a\n-b\n+B\n@@\n d\n-e\n+E\n@@\n f\n+g\n*** End of File\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "interleaved2.txt": "a\nB\nc\nd\nE\nf\ng\n"
+    }
+  },
+  {
+    "name": "invalid_missing_begin_patch_marker",
+    "source": "upstream/rs/parser.rs::test_parse_patch (first assertion, 'bad')",
+    "files_before": {},
+    "patch": "bad",
+    "expect_exit_zero": false,
+    "files_after": {}
+  },
+  {
+    "name": "invalid_missing_end_patch_marker",
+    "source": "upstream/rs/parser.rs::test_parse_patch (second assertion, '*** Begin Patch\\nbad')",
+    "files_before": {},
+    "patch": "*** Begin Patch\nbad",
+    "expect_exit_zero": false,
+    "files_after": {}
+  },
+  {
+    "name": "invalid_unknown_hunk_header",
+    "source": "upstream/rs/parser.rs::test_parse_one_hunk (invalid hunk header path)",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Frobnicate File: x.txt\n*** End Patch",
+    "expect_exit_zero": false,
+    "files_after": {}
+  },
+  {
+    "name": "invalid_empty_update_hunk",
+    "source": "upstream/rs/parser.rs::test_parse_patch ('Update file hunk for path ... is empty')",
+    "files_before": {
+      "empty_update_target.txt": "orig\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: empty_update_target.txt\n*** End Patch",
+    "expect_exit_zero": false,
+    "files_after": {}
+  },
+  {
+    "name": "invalid_unexpected_line_in_update_hunk",
+    "source": "upstream/rs/parser.rs::test_update_file_chunk (unexpected line in update hunk)",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Update File: x2.txt\n@@\nnotavalidprefix\n*** End Patch",
+    "expect_exit_zero": false,
+    "files_after": {}
+  },
+  {
+    "name": "quirk_update_context_mismatch_silently_succeeds",
+    "source": "discovered via calibration (upstream/rs/lib.rs::apply_hunks, no dedicated upstream test)",
+    "files_before": {
+      "exist.txt": "original content here\n"
+    },
+    "patch": "*** Begin Patch\n*** Update File: exist.txt\n@@\n-this line does not exist\n+replacement\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {}
+  },
+  {
+    "name": "quirk_update_nonexistent_file_silently_succeeds",
+    "source": "discovered via calibration (upstream/rs/lib.rs::apply_hunks, no dedicated upstream test)",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Update File: does_not_exist.txt\n@@\n-foo\n+bar\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {}
+  },
+  {
+    "name": "quirk_delete_nonexistent_file_silently_succeeds",
+    "source": "discovered via calibration (upstream/rs/lib.rs::apply_hunks, no dedicated upstream test)",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Delete File: also_missing.txt\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {}
+  },
+  {
+    "name": "quirk_empty_patch_no_hunks_silently_succeeds",
+    "source": "discovered via calibration (upstream/rs/lib.rs::apply_hunks_to_files, 'No files were modified.')",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {}
+  },
+  {
+    "name": "quirk_partial_application_across_hunks_non_atomic",
+    "source": "discovered via calibration (upstream/rs/lib.rs::apply_hunks_to_files, no dedicated upstream test)",
+    "files_before": {},
+    "patch": "*** Begin Patch\n*** Add File: a.txt\n+hello\n*** Update File: missing.txt\n@@\n-foo\n+bar\n*** Add File: c.txt\n+world\n*** End Patch",
+    "expect_exit_zero": true,
+    "files_after": {
+      "a.txt": "hello\n"
+    }
+  }
+]
